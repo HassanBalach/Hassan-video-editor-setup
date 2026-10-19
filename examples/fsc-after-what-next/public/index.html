@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Outfit";
+        src: url("fonts/Outfit.ttf") format("truetype");
+        font-weight: 100 900;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Noto Nastaliq Urdu";
+        src: url("fonts/NotoNastaliqUrdu.ttf") format("truetype");
+        font-weight: 400 700;
+        font-display: block;
+      }
+      :root {
+        --blue: #4285f4;
+        --red: #ea4335;
+        --yellow: #fbbc05;
+        --green: #34a853;
+        --ink: #1f1f1f;
+        --ink2: #5f6368;
+        --paper: #f8fafd;
+        --card: #ffffff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: "Outfit", "Noto Nastaliq Urdu", sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--paper);
+      }
+      .abs {
+        position: absolute;
+      }
+      .row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* ---------- soft canvas behind the video ---------- */
+      #bg {
+        position: absolute;
+        inset: 0;
+        background: var(--paper);
+        overflow: hidden;
+      }
+      .blob {
+        position: absolute;
+        width: 640px;
+        height: 640px;
+        border-radius: 50%;
+        filter: blur(90px);
+        opacity: 0.42;
+      }
+      .grid-dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(60, 64, 67, 0.13) 2px, transparent 2px);
+        background-size: 44px 44px;
+      }
+
+      /* ---------- video + its chrome ---------- */
+      #video-wrap {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        clip-path: inset(0px 0px 0px 0px round 0px);
+      }
+      #video-wrap video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      #card-shadow {
+        left: 70px;
+        top: 80px;
+        width: 940px;
+        height: 850px;
+        border-radius: 56px;
+        box-shadow:
+          0 30px 70px rgba(60, 64, 67, 0.28),
+          0 0 0 6px #fff;
+        opacity: 0;
+      }
+      #pip-ring {
+        left: 344px;
+        top: 144px;
+        width: 392px;
+        height: 392px;
+        border-radius: 50%;
+        background: conic-gradient(var(--blue), var(--red), var(--yellow), var(--green), var(--blue));
+        opacity: 0;
+      }
+      #pip-ring-inner {
+        position: absolute;
+        inset: 8px;
+        border-radius: 50%;
+        background: #fff;
+      }
+
+      /* ---------- common UI atoms ---------- */
+      .pill {
+        background: #fff;
+        border-radius: 999px;
+        box-shadow: 0 10px 30px rgba(60, 64, 67, 0.18);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 42px;
+        height: 104px;
+        font-weight: 700;
+        font-size: 46px;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      .card {
+        background: #fff;
+        border-radius: 44px;
+        box-shadow: 0 24px 60px rgba(60, 64, 67, 0.22);
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.86);
+        border-radius: 40px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      }
+      .dot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .b {
+        background: var(--blue);
+      }
+      .r {
+        background: var(--red);
+      }
+      .y {
+        background: var(--yellow);
+      }
+      .g {
+        background: var(--green);
+      }
+      .cb {
+        color: var(--blue);
+      }
+      .cr {
+        color: var(--red);
+      }
+      .cy {
+        color: #e3a600;
+      }
+      .cg {
+        color: var(--green);
+      }
+      .ch {
+        display: inline-block;
+      }
+      .layer {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+
+      /* ---------- captions ---------- */
+      #caps {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1580px;
+        height: 130px;
+      }
+      .cap {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        display: flex;
+        justify-content: center;
+        opacity: 0;
+      }
+      .cap-in {
+        background: #fff;
+        border-radius: 34px;
+        padding: 14px 34px 18px;
+        font-weight: 800;
+        font-size: 62px;
+        letter-spacing: -0.5px;
+        color: var(--ink);
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+        white-space: nowrap;
+      }
+      .cap-in span {
+        display: inline-block;
+        margin: 0 8px;
+      }
+
+      /* ---------- search UI ---------- */
+      #search-bar {
+        left: 50px;
+        top: 980px;
+        width: 980px;
+        height: 120px;
+        border-radius: 60px;
+        background: #fff;
+        box-shadow: 0 12px 34px rgba(60, 64, 67, 0.22);
+        display: flex;
+        align-items: center;
+        padding: 0 40px;
+        gap: 26px;
+        font-size: 44px;
+        color: var(--ink);
+        font-weight: 500;
+      }
+      #search-text {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      #caret {
+        display: inline-block;
+        width: 4px;
+        height: 52px;
+        background: var(--blue);
+        vertical-align: middle;
+        margin-left: 4px;
+      }
+      #sugg {
+        left: 50px;
+        top: 1118px;
+        width: 980px;
+        height: 344px;
+        border-radius: 40px;
+        background: #fff;
+        box-shadow: 0 16px 40px rgba(60, 64, 67, 0.2);
+        overflow: hidden;
+        padding: 14px 0;
+      }
+      .sg {
+        position: relative;
+        height: 79px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        padding: 0 40px;
+        font-size: 40px;
+        color: var(--ink);
+        font-weight: 500;
+        opacity: 0;
+      }
+      .sg-hl {
+        position: absolute;
+        inset: 0;
+        background: #e8f0fe;
+        transform-origin: left center;
+      }
+      .sg > * {
+        position: relative;
+      }
+
+      /* ---------- hero overlays ---------- */
+      .hero {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .big {
+        font-weight: 800;
+        font-size: 150px;
+        line-height: 1;
+        letter-spacing: -3px;
+        text-align: center;
+      }
+      .kicker {
+        font-weight: 600;
+        font-size: 44px;
+        letter-spacing: 6px;
+        text-transform: uppercase;
+      }
+
+      /* chips */
+      .chip {
+        background: #fff;
+        border-radius: 999px;
+        height: 96px;
+        padding: 0 36px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 42px;
+        font-weight: 700;
+        color: var(--ink);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+        white-space: nowrap;
+      }
+
+      /* chat */
+      .bubble {
+        position: absolute;
+        height: 108px;
+        border-radius: 54px;
+        display: flex;
+        align-items: center;
+        padding: 0 44px;
+        font-size: 48px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        opacity: 0;
+      }
+      .urdu {
+        font-family: "Noto Nastaliq Urdu", "Outfit", sans-serif;
+        font-size: 40px;
+        line-height: 1.1;
+      }
+      .tile {
+        position: absolute;
+        border-radius: 22px;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="fsc" data-start="0" data-duration="150.4" data-fps="30" data-width="1080" data-height="1920">
+      <!-- soft canvas -->
+      <div id="bg">
+        <div class="grid-dots"></div>
+        <div class="blob b" id="blob1" style="left: -180px; top: 120px"></div>
+        <div class="blob r" id="blob2" style="left: 620px; top: 420px"></div>
+        <div class="blob y" id="blob3" style="left: -120px; top: 1180px"></div>
+        <div class="blob g" id="blob4" style="left: 600px; top: 1360px"></div>
+      </div>
+
+      <!-- chrome that sits behind the cropped video -->
+      <div class="abs" id="card-shadow"></div>
+      <div class="abs" id="pip-ring"><div id="pip-ring-inner"></div></div>
+
+      <!-- the footage -->
+      <div id="video-wrap">
+        <video id="bg-video" class="clip" src="input-video.mp4" playsinline data-has-audio="true" data-start="0" data-duration="150.4" data-track-index="1"></video>
+      </div>
+
+      <!-- ===== A. hook ===== -->
+      <div class="layer" id="A">
+        <div class="row" style="top: 170px; height: 120px">
+          <div class="pill" id="hook-pill">
+            <span class="dot b hd"></span><span class="dot r hd"></span><span class="dot y hd"></span><span class="dot g hd"></span>
+            <span id="hook-text" style="margin-left: 8px">After <span class="cb">FSC</span>, what next?</span>
+          </div>
+        </div>
+        <div class="row" style="top: 1300px; height: 160px; gap: 0px" id="friends">
+          <div class="abs fr" style="left: 330px; top: 20px; width: 120px; height: 120px; border-radius: 50%; border: 8px solid #fff; background: var(--blue)"></div>
+          <div class="abs fr" style="left: 410px; top: 20px; width: 120px; height: 120px; border-radius: 50%; border: 8px solid #fff; background: var(--red)"></div>
+          <div class="abs fr" style="left: 490px; top: 20px; width: 120px; height: 120px; border-radius: 50%; border: 8px solid #fff; background: var(--yellow)"></div>
+          <div class="abs fr" style="left: 570px; top: 20px; width: 120px; height: 120px; border-radius: 50%; border: 8px solid #fff; background: var(--green)"></div>
+          <div class="abs fr" style="left: 650px; top: 20px; width: 120px; height: 120px; border-radius: 50%; border: 8px solid #fff; background: #a142f4"></div>
+        </div>
+        <div class="row" style="top: 1462px; height: 80px">
+          <div class="chip" id="friends-label" style="height: 76px; font-size: 36px">🎓 FSC students ask...</div>
+        </div>
+      </div>
+
+      <!-- ===== B. search ===== -->
+      <div class="layer" id="B">
+        <div class="abs" id="search-bar">
+          <svg width="54" height="54" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5" fill="none" stroke="#5f6368" stroke-width="2.4" /><path d="M15 15l5.5 5.5" stroke="#5f6368" stroke-width="2.4" stroke-linecap="round" /></svg>
+          <div id="search-text"><span id="search-typed"></span><span id="caret"></span></div>
+          <svg width="46" height="54" viewBox="0 0 16 24"><rect x="4" y="1" width="8" height="14" rx="4" fill="#4285f4" /><path d="M1.5 11a6.5 6.5 0 0 0 13 0" fill="none" stroke="#34a853" stroke-width="2" /><path d="M8 17.5v4" stroke="#ea4335" stroke-width="2" /><path d="M5 22h6" stroke="#fbbc05" stroke-width="2" /></svg>
+        </div>
+        <div class="abs" id="sugg">
+          <div class="sg" id="sg1"><div class="sg-hl" id="sgh1"></div><span>🏛️</span><span>Should I go to <b>university</b>?</span></div>
+          <div class="sg" id="sg2"><div class="sg-hl" id="sgh2"></div><span>💻</span><span>Is <b>CS</b> too tough?</span></div>
+          <div class="sg" id="sg3"><div class="sg-hl" id="sgh3"></div><span>📐</span><span>Should I take <b>Maths</b>?</span></div>
+          <div class="sg" id="sg4"><div class="sg-hl" id="sgh4"></div><span>⌨️</span><span>Should I learn <b>coding</b>?</span></div>
+        </div>
+      </div>
+
+      <!-- ===== C. confused / no answers ===== -->
+      <div class="layer" id="C">
+        <div class="abs q" id="q1" style="left: 90px; top: 430px; width: 130px; height: 130px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 84px; font-weight: 800; display: flex; align-items: center; justify-content: center">?</div>
+        <div class="abs q" id="q2" style="left: 880px; top: 360px; width: 110px; height: 110px; border-radius: 50%; background: var(--red); color: #fff; font-size: 70px; font-weight: 800; display: flex; align-items: center; justify-content: center">?</div>
+        <div class="abs q" id="q3" style="left: 870px; top: 640px; width: 96px; height: 96px; border-radius: 50%; background: var(--yellow); color: #fff; font-size: 60px; font-weight: 800; display: flex; align-items: center; justify-content: center">?</div>
+        <div class="row" style="top: 1300px; height: 200px">
+          <div class="glass" id="conf-card" style="width: 860px; height: 180px; display: flex; align-items: center; gap: 30px; padding: 0 44px">
+            <svg width="190" height="120" viewBox="0 0 190 120"><path id="scribble" d="M10 70 C 30 10, 60 10, 60 60 S 20 110, 50 100 S 110 20, 120 60 S 90 110, 130 90 S 170 30, 180 60" fill="none" stroke="#ea4335" stroke-width="9" stroke-linecap="round" /></svg>
+            <div style="font-size: 54px; font-weight: 800; color: var(--ink)">I was <span class="cr">confused</span> too</div>
+          </div>
+        </div>
+        <div class="row" style="top: 1300px; height: 200px">
+          <div class="glass" id="nores" style="width: 860px; height: 180px; display: flex; align-items: center; gap: 30px; padding: 0 44px; opacity: 0">
+            <svg width="86" height="86" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.5" fill="none" stroke="#5f6368" stroke-width="2.4" /><path d="M15 15l5.5 5.5" stroke="#5f6368" stroke-width="2.4" stroke-linecap="round" /></svg>
+            <div>
+              <div style="font-size: 50px; font-weight: 800; color: var(--ink)">No answers found</div>
+              <div style="font-size: 34px; font-weight: 500; color: var(--ink2)">when I needed them most</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== D. hero: one advice ===== -->
+      <div class="layer" id="D" style="opacity: 1; clip-path: circle(0px at 540px 960px)">
+        <div class="hero" style="background: var(--blue)">
+          <div class="kicker" style="color: rgba(255, 255, 255, 0.8)" id="adv-kick">For every student</div>
+          <div class="big" style="color: #fff; margin-top: 26px" id="adv-big">
+            <span class="ch">O</span><span class="ch">n</span><span class="ch">e</span>&nbsp;<span class="ch">a</span><span class="ch">d</span><span class="ch">v</span><span class="ch">i</span><span class="ch">c</span><span class="ch">e</span>
+          </div>
+        </div>
+      </div>
+      <div class="layer" id="Dpill">
+        <div class="row" style="top: 170px; height: 120px">
+          <div class="pill" id="adv-pill" style="background: var(--blue); color: #fff">💡 The only advice</div>
+        </div>
+        <div class="row" style="top: 1350px; height: 120px; gap: 22px">
+          <div class="chip" id="chip1"><span class="dot b"></span>College</div>
+          <div class="chip" id="chip2"><span class="dot r"></span>A skill</div>
+          <div class="chip" id="chip3"><span class="dot g"></span>Anything</div>
+        </div>
+      </div>
+
+      <!-- ===== E. hero: enjoy the process ===== -->
+      <div class="layer" id="E">
+        <div class="abs ripple" style="left: 340px; top: 140px; width: 400px; height: 400px; border-radius: 50%; border: 6px solid var(--blue)"></div>
+        <div class="abs ripple" style="left: 340px; top: 140px; width: 400px; height: 400px; border-radius: 50%; border: 6px solid var(--red)"></div>
+        <div class="abs ripple" style="left: 340px; top: 140px; width: 400px; height: 400px; border-radius: 50%; border: 6px solid var(--yellow)"></div>
+        <div class="abs ripple" style="left: 340px; top: 140px; width: 400px; height: 400px; border-radius: 50%; border: 6px solid var(--green)"></div>
+        <div class="row" style="top: 760px; height: 600px; flex-direction: column">
+          <div class="kicker" style="color: var(--ink2)" id="ep-kick">The secret</div>
+          <div class="big" style="margin-top: 30px; font-size: 168px">
+            <div class="ep-w cb">Enjoy</div>
+            <div class="ep-w" style="color: var(--ink); font-size: 120px; margin: 6px 0">the</div>
+            <div class="ep-w cg">process</div>
+          </div>
+          <svg width="640" height="60" viewBox="0 0 640 60" style="margin-top: 10px"><path id="ep-line" d="M10 40 C 160 10, 300 55, 450 25 S 600 20, 630 30" fill="none" stroke="#fbbc05" stroke-width="12" stroke-linecap="round" /></svg>
+        </div>
+      </div>
+
+      <!-- ===== E2. tough situations (mountain) ===== -->
+      <div class="layer" id="E2">
+        <div class="row" style="top: 1210px; height: 330px">
+          <div class="glass" id="mtn-card" style="width: 900px; height: 310px; position: relative; overflow: hidden">
+            <svg class="abs" style="left: 40px; top: 30px" width="520" height="250" viewBox="0 0 520 250">
+              <path id="mtn" d="M10 235 L 120 140 L 175 175 L 300 40 L 370 110 L 420 80 L 510 235" fill="none" stroke="#1f1f1f" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" />
+              <path id="flag" d="M300 40 L 300 -2 L 340 12 L 300 26" fill="#34a853" />
+            </svg>
+            <div class="abs" id="climber" style="left: 32px; top: 247px; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 8px rgba(66, 133, 244, 0.25)"></div>
+            <div class="abs" style="left: 590px; top: 70px; width: 290px; font-size: 52px; font-weight: 800; line-height: 1.05; color: var(--ink)" id="mtn-txt">Every <span class="cr">tough</span> situation <span class="cg">✓</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== F. coding importance (bars) ===== -->
+      <div class="layer" id="F">
+        <div class="abs card" id="bars-card" style="left: 50px; top: 990px; width: 980px; height: 500px; padding: 44px 56px">
+          <div style="font-size: 56px; font-weight: 800; color: var(--ink)" id="bars-title">How important is <span class="cb">coding</span>?</div>
+          <div style="margin-top: 44px; font-size: 38px; font-weight: 600; color: var(--ink2)">Basics you need</div>
+          <div style="position: relative; margin-top: 14px; height: 70px; border-radius: 35px; background: #eef1f6">
+            <div id="bar1" style="position: absolute; left: 0; top: 0; height: 70px; width: 868px; border-radius: 35px; background: var(--blue); transform-origin: left center"></div>
+          </div>
+          <div class="abs" id="num1" style="left: 56px; top: 205px; width: 868px; text-align: right; font-size: 56px; font-weight: 800; color: var(--blue)">0%</div>
+          <div style="margin-top: 40px; font-size: 38px; font-weight: 600; color: var(--ink2)">Products you can build</div>
+          <div style="position: relative; margin-top: 14px; height: 70px; border-radius: 35px; background: #eef1f6">
+            <div id="bar2" style="position: absolute; left: 0; top: 0; height: 70px; width: 868px; border-radius: 35px; background: var(--green); transform-origin: left center"></div>
+          </div>
+          <div class="abs" id="num2" style="left: 56px; top: 369px; width: 868px; text-align: right; font-size: 56px; font-weight: 800; color: var(--green)">0%</div>
+        </div>
+      </div>
+
+      <!-- ===== G. color-block wipe ===== -->
+      <div class="abs" id="blocks" style="inset: 0; pointer-events: none">
+        <div class="abs blk b" style="left: 0; top: 0; width: 271px; height: 1920px"></div>
+        <div class="abs blk r" style="left: 270px; top: 0; width: 271px; height: 1920px"></div>
+        <div class="abs blk y" style="left: 540px; top: 0; width: 271px; height: 1920px"></div>
+        <div class="abs blk g" style="left: 810px; top: 0; width: 270px; height: 1920px"></div>
+      </div>
+
+      <!-- ===== H. AI era ===== -->
+      <div class="layer" id="H">
+        <div class="row" style="top: 580px; height: 100px">
+          <div class="pill" id="ai-pill" style="height: 90px; font-size: 40px">
+            <svg width="44" height="44" viewBox="0 0 24 24"><path d="M12 1 C 13 8, 16 11, 23 12 C 16 13, 13 16, 12 23 C 11 16, 8 13, 1 12 C 8 11, 11 8, 12 1 Z" fill="#4285f4" /></svg>
+            The AI era
+          </div>
+        </div>
+        <div id="langs">
+          <div class="bubble b" id="bub1" style="left: 80px; top: 740px">English</div>
+          <div class="bubble r" id="bub2" style="left: 330px; top: 880px"><span class="urdu" dir="rtl">اردو</span>&nbsp;·&nbsp;Urdu</div>
+          <div class="bubble g" id="bub3" style="left: 520px; top: 1020px"><span class="urdu" dir="rtl">بلوچی</span>&nbsp;·&nbsp;Balochi</div>
+          <svg class="abs" style="left: 0; top: 0" width="1080" height="1500" viewBox="0 0 1080 1500">
+            <path class="lk" d="M300 850 C 420 1000, 520 1120, 540 1230" fill="none" stroke="#4285f4" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round" />
+            <path class="lk" d="M560 990 C 560 1080, 545 1150, 540 1230" fill="none" stroke="#ea4335" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round" />
+            <path class="lk" d="M800 1130 C 700 1170, 600 1190, 540 1230" fill="none" stroke="#34a853" stroke-width="6" stroke-dasharray="2 14" stroke-linecap="round" />
+          </svg>
+          <div class="abs" id="spark" style="left: 470px; top: 1200px; width: 140px; height: 140px; border-radius: 50%; background: #fff; box-shadow: 0 14px 36px rgba(60, 64, 67, 0.25); display: flex; align-items: center; justify-content: center">
+            <svg id="spark-star" width="90" height="90" viewBox="0 0 24 24"><defs><linearGradient id="gstar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285f4" /><stop offset="0.5" stop-color="#a142f4" /><stop offset="1" stop-color="#ea4335" /></linearGradient></defs><path d="M12 1 C 13 8, 16 11, 23 12 C 16 13, 13 16, 12 23 C 11 16, 8 13, 1 12 C 8 11, 11 8, 12 1 Z" fill="url(#gstar)" /></svg>
+          </div>
+        </div>
+        <div class="row" style="top: 760px; height: 600px">
+          <div class="card" id="eq-card" style="width: 960px; padding: 60px 50px; text-align: center; opacity: 0">
+            <div style="font-size: 64px; font-weight: 700; color: var(--ink2)">Your language</div>
+            <div style="font-size: 90px; font-weight: 800; color: var(--ink); margin: 6px 0">=</div>
+            <div id="eq-grad" style="font-size: 96px; font-weight: 800; line-height: 1.05; background: linear-gradient(90deg, #4285f4, #a142f4, #ea4335, #fbbc05, #34a853, #4285f4); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent">Programming language</div>
+          </div>
+        </div>
+        <div id="chat">
+          <div class="abs" id="prompt" style="left: 60px; top: 760px; width: 960px; height: 120px; border-radius: 60px; background: #fff; box-shadow: 0 12px 34px rgba(60, 64, 67, 0.22); display: flex; align-items: center; padding: 0 20px 0 44px; font-size: 42px; font-weight: 500; color: var(--ink); opacity: 0">
+            <div style="flex: 1; white-space: nowrap; overflow: hidden"><span id="prompt-typed"></span><span id="caret2" style="display: inline-block; width: 4px; height: 50px; background: var(--blue); vertical-align: middle; margin-left: 4px"></span></div>
+            <div id="send" style="width: 86px; height: 86px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center">
+              <svg width="44" height="44" viewBox="0 0 24 24"><path d="M3 12 L 21 3 L 14 21 L 11 13 Z" fill="#fff" /></svg>
+            </div>
+          </div>
+          <div class="abs" id="typing" style="left: 60px; top: 920px; width: 200px; height: 90px; border-radius: 45px; background: #fff; box-shadow: 0 10px 28px rgba(60, 64, 67, 0.2); display: flex; align-items: center; justify-content: center; gap: 14px; opacity: 0">
+            <span class="dot b td"></span><span class="dot r td"></span><span class="dot y td"></span>
+          </div>
+          <div class="abs card" id="app" style="left: 60px; top: 920px; width: 960px; height: 560px; opacity: 0; overflow: hidden">
+            <div class="tile" style="left: 30px; top: 30px; width: 900px; height: 90px; background: var(--blue)"></div>
+            <div class="tile" style="left: 30px; top: 140px; width: 430px; height: 200px; background: #e8f0fe"></div>
+            <div class="tile" style="left: 480px; top: 140px; width: 450px; height: 95px; background: #fce8e6"></div>
+            <div class="tile" style="left: 480px; top: 245px; width: 450px; height: 95px; background: #fef7e0"></div>
+            <div class="tile" style="left: 30px; top: 360px; width: 280px; height: 80px; background: #e6f4ea"></div>
+            <div class="tile" style="left: 330px; top: 360px; width: 280px; height: 80px; background: #e6f4ea"></div>
+            <div class="tile" style="left: 630px; top: 360px; width: 300px; height: 80px; background: #e6f4ea"></div>
+            <div class="abs" id="built" style="left: 0; right: 0; top: 462px; display: flex; justify-content: center; opacity: 0">
+              <div style="display: flex; align-items: center; gap: 16px; font-size: 46px; font-weight: 800; color: var(--green)">
+                <svg width="56" height="56" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#34a853" /><path d="M6.5 12.5 L 10.5 16.5 L 18 8" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                Built from your words
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== I. worth it? YES ===== -->
+      <div class="layer" id="I">
+        <div class="row" style="top: 1230px; height: 300px">
+          <div class="glass" id="worth" style="width: 880px; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 800; color: var(--ink)">Is coding <span class="cb" style="margin: 0 16px">worth</span> it?</div>
+        </div>
+        <div class="abs" id="yes" style="left: 0; right: 0; top: 1080px; height: 460px; display: flex; flex-direction: column; align-items: center; opacity: 0">
+          <svg width="260" height="260" viewBox="0 0 260 260">
+            <circle id="yes-c" cx="130" cy="130" r="118" fill="#34a853" />
+            <path id="yes-ck" d="M72 134 L 112 174 L 190 92" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <div class="pill" style="margin-top: 20px; font-size: 56px; height: 110px"><span class="cg" style="font-weight: 800">YES,</span>&nbsp;definitely</div>
+        </div>
+        <div id="confetti"></div>
+      </div>
+
+      <!-- ===== J. coder vs non-coder ===== -->
+      <div class="layer" id="J" style="perspective: 1400px">
+        <div class="abs card" id="cmp1" style="left: 50px; top: 1150px; width: 475px; height: 360px; padding: 40px; display: flex; flex-direction: column; justify-content: space-between">
+          <div style="width: 90px; height: 90px; border-radius: 24px; background: #e6f4ea; display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; color: var(--green)">&lt;/&gt;</div>
+          <div>
+            <div style="font-size: 54px; font-weight: 800; color: var(--ink)">Coder</div>
+            <div style="font-size: 40px; font-weight: 600; color: var(--green)">Your domain ✓</div>
+          </div>
+        </div>
+        <div class="abs card" id="cmp2" style="left: 555px; top: 1150px; width: 475px; height: 360px; padding: 40px; display: flex; flex-direction: column; justify-content: space-between">
+          <div style="width: 90px; height: 90px; border-radius: 24px; background: #fef7e0; display: flex; align-items: center; justify-content: center; font-size: 50px">🧗</div>
+          <div>
+            <div style="font-size: 54px; font-weight: 800; color: var(--ink)">Non-coder</div>
+            <div style="font-size: 40px; font-weight: 600; color: #e3a600">A bit tough</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== K. skills that count ===== -->
+      <div class="layer" id="K">
+        <div class="abs card" id="sk-card" style="left: 50px; top: 980px; width: 980px; height: 530px; overflow: hidden">
+          <svg class="abs" style="left: 0; top: 0" width="980" height="530" viewBox="0 0 980 530">
+            <path class="skl" d="M490 265 L 245 120" stroke="#4285f4" stroke-width="6" fill="none" stroke-linecap="round" />
+            <path class="skl" d="M490 265 L 735 120" stroke="#ea4335" stroke-width="6" fill="none" stroke-linecap="round" />
+            <path class="skl" d="M490 265 L 245 410" stroke="#fbbc05" stroke-width="6" fill="none" stroke-linecap="round" />
+            <path class="skl" d="M490 265 L 735 410" stroke="#34a853" stroke-width="6" fill="none" stroke-linecap="round" />
+          </svg>
+          <div class="abs" id="sk-center" style="left: 330px; top: 205px; width: 320px; height: 120px; border-radius: 60px; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; text-align: center; line-height: 1">Not only coding</div>
+          <div class="abs sk" style="left: 45px; top: 75px; width: 400px; height: 90px; border-radius: 45px; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700">Communication</div>
+          <div class="abs sk" style="left: 535px; top: 75px; width: 400px; height: 90px; border-radius: 45px; background: var(--red); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700">Soft skills</div>
+          <div class="abs sk" style="left: 45px; top: 365px; width: 400px; height: 90px; border-radius: 45px; background: var(--yellow); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700">Handling people</div>
+          <div class="abs sk" style="left: 535px; top: 365px; width: 400px; height: 90px; border-radius: 45px; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700">Proving yourself</div>
+        </div>
+      </div>
+
+      <!-- ===== L. outro ===== -->
+      <div class="layer" id="L" style="opacity: 1; clip-path: circle(0px at 540px 960px)">
+        <div class="hero" style="background: #fff">
+          <div style="display: flex; gap: 26px" id="out-dots"><span class="dot b od" style="width: 46px; height: 46px"></span><span class="dot r od" style="width: 46px; height: 46px"></span><span class="dot y od" style="width: 46px; height: 46px"></span><span class="dot g od" style="width: 46px; height: 46px"></span></div>
+          <div class="big" style="margin-top: 60px; font-size: 140px; color: var(--ink)" id="out-big">Enjoy the <span class="cg">process.</span></div>
+          <div style="margin-top: 30px; font-size: 48px; font-weight: 600; color: var(--ink2)" id="out-sub">Learn the basics. Build your skills.</div>
+          <div class="pill" id="out-cta" style="margin-top: 70px; background: var(--blue); color: #fff; font-size: 50px">Follow for more →</div>
+        </div>
+      </div>
+
+      <!-- captions -->
+      <div id="caps"></div>
+
+      <script src="vendor/gsap.min.js"></script>
+      <script src="captions.js"></script>
+      <script>
+        (function () {
+          const tl = gsap.timeline({ paused: true });
+          const q = (s) => document.querySelector(s);
+          const qa = (s) => Array.from(document.querySelectorAll(s));
+          // Material-like motion
+          const EMPH = "expo.out";
+          const STD = "power3.inOut";
+          const SPRING = "back.out(1.7)";
+
+          // ---------------- video framing modes ----------------
+          const MODES = {
+            full: { clipPath: "inset(0px 0px 0px 0px round 0px)", y: 0, scale: 1 },
+            card: { clipPath: "inset(250px 70px 820px 70px round 56px)", y: -170, scale: 1 },
+            pip: { clipPath: "inset(330px 250px 1010px 250px round 290px)", y: -280, scale: 0.62 },
+          };
+          gsap.set("#video-wrap", { transformOrigin: "540px 620px" });
+          function mode(name, t, d) {
+            tl.to("#video-wrap", Object.assign({ duration: d || 0.9, ease: STD }, MODES[name]), t);
+          }
+          function chrome(sel, t0, t1) {
+            tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, t0);
+            tl.to(sel, { opacity: 0, duration: 0.25, ease: "power2.in" }, t1);
+          }
+          function layer(sel, t0, t1, fade) {
+            tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: fade || 0.01 }, t0);
+            tl.to(sel, { opacity: 0, duration: fade || 0.3, ease: "power2.in" }, t1);
+          }
+          function popIn(sel, t, opts) {
+            tl.fromTo(sel, { opacity: 0, scale: 0.6, y: 30 }, Object.assign({ opacity: 1, scale: 1, y: 0, duration: 0.6, ease: SPRING }, opts || {}), t);
+          }
+          function drawPath(sel, t, d) {
+            const el = q(sel);
+            const L = el.getTotalLength();
+            tl.fromTo(sel, { strokeDasharray: L, strokeDashoffset: L }, { strokeDashoffset: 0, duration: d, ease: "power2.inOut" }, t);
+          }
+          function typeText(sel, text, t, cps) {
+            const el = q(sel);
+            const o = { n: 0 };
+            tl.to(o, { n: text.length, duration: text.length / cps, ease: "none", onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)); } }, t);
+          }
+          function blink(sel, t0, t1) {
+            const n = Math.max(1, Math.floor((t1 - t0) / 0.5));
+            tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", repeat: n * 2 - 1, yoyo: true }, t0);
+          }
+
+          // ---------------- ambient background ----------------
+          [["#blob1", 120, 80], ["#blob2", -100, 120], ["#blob3", 140, -90], ["#blob4", -120, -110]].forEach(([s, dx, dy], i) => {
+            tl.to(s, { x: dx, y: dy, duration: 9 + i * 1.3, ease: "sine.inOut", repeat: 7, yoyo: true }, 0);
+          });
+
+          // ================= A. HOOK (0 – 13.6) =================
+          layer("#A", 0, 13.45);
+          tl.fromTo("#hook-pill", { width: 104, opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.5, ease: SPRING }, 0.1);
+          tl.fromTo(".hd", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: SPRING, stagger: 0.12 }, 0.15);
+          tl.to(".hd", { y: -16, duration: 0.22, ease: "sine.out", yoyo: true, repeat: 3, stagger: 0.08 }, 0.7);
+          tl.to("#hook-pill", { width: 900, duration: 0.8, ease: EMPH }, 1.0);
+          tl.fromTo("#hook-text", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, ease: EMPH }, 1.2);
+          tl.to("#hook-pill", { y: -8, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: 5 }, 2.2);
+          tl.fromTo(".fr", { opacity: 0, scale: 0, y: 40 }, { opacity: 1, scale: 1, y: 0, duration: 0.55, ease: SPRING, stagger: 0.1 }, 8.2);
+          popIn("#friends-label", 8.9);
+
+          // ================= B. SEARCH (13.6 – 36) =================
+          mode("card", 13.5, 1.0);
+          chrome("#card-shadow", 14.3, 35.75);
+          layer("#B", 13.9, 35.85, 0.01);
+          tl.fromTo("#search-bar", { opacity: 0, y: 60, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: EMPH }, 14.0);
+          blink("#caret", 14.4, 16.6);
+          typeText("#search-typed", "what should I study after FSC", 16.7, 14);
+          blink("#caret", 18.9, 35.5);
+          tl.fromTo("#sugg", { opacity: 0, y: -30, scaleY: 0.6, transformOrigin: "50% 0%" }, { opacity: 1, y: 0, scaleY: 1, duration: 0.7, ease: EMPH }, 19.0);
+          const SG = [20.9, 24.93, 27.4, 31.4];
+          SG.forEach((t, i) => {
+            const n = i + 1;
+            tl.fromTo("#sg" + n, { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.5, ease: EMPH }, t - 0.05);
+            tl.fromTo("#sgh" + n, { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: EMPH }, t);
+            if (i < 3) tl.to("#sgh" + n, { opacity: 0, duration: 0.4 }, SG[i + 1]);
+          });
+          tl.to("#B", { scale: 0.9, filter: "blur(10px)", duration: 0.6, ease: "power2.in" }, 35.3);
+          mode("full", 35.75, 0.9);
+
+          // ================= C. CONFUSED (39 – 54) =================
+          layer("#C", 39.3, 54.0);
+          qa(".q").forEach((el, i) => {
+            popIn(el, 39.5 + i * 0.3);
+            tl.to(el, { y: -18, rotation: i % 2 ? 8 : -8, duration: 1.3 + i * 0.2, ease: "sine.inOut", yoyo: true, repeat: 5 }, 40.2 + i * 0.3);
+          });
+          tl.to(".q", { opacity: 0, scale: 0.5, duration: 0.4, ease: "power2.in", stagger: 0.08 }, 49.4);
+          tl.fromTo("#conf-card", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.7, ease: EMPH }, 39.6);
+          drawPath("#scribble", 39.9, 1.6);
+          tl.to("#conf-card", { opacity: 0, y: -30, duration: 0.35, ease: "power2.in" }, 49.6);
+          tl.fromTo("#nores", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.7, ease: EMPH }, 50.0);
+          tl.to("#nores", { x: 14, duration: 0.07, yoyo: true, repeat: 5, ease: "sine.inOut" }, 51.3);
+
+          // ================= D. ONE ADVICE hero (54.1 – 55.7) =================
+          tl.to("#D", { clipPath: "circle(1150px at 540px 960px)", duration: 0.6, ease: "power3.out" }, 54.05);
+          tl.fromTo("#adv-big .ch", { opacity: 0, y: 70, scale: 0.6 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: SPRING, stagger: 0.035 }, 54.25);
+          tl.fromTo("#adv-kick", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4 }, 54.5);
+          tl.to("#D", { clipPath: "circle(0px at 540px 230px)", duration: 0.55, ease: "power3.in" }, 55.3);
+          layer("#Dpill", 55.55, 67.4);
+          tl.fromTo("#adv-pill", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.6, ease: SPRING }, 55.6);
+          popIn("#chip1", 63.5);
+          popIn("#chip2", 65.0);
+          popIn("#chip3", 66.6);
+
+          // ================= E. ENJOY THE PROCESS hero (67.6 – 74.2) =================
+          mode("pip", 67.5, 0.9);
+          chrome("#pip-ring", 68.2, 73.95);
+          tl.to("#pip-ring", { rotation: 360, duration: 5.8, ease: "none" }, 68.2);
+          layer("#E", 67.9, 74.0);
+          qa(".ripple").forEach((el, i) => {
+            tl.fromTo(el, { scale: 1, opacity: 0.9 }, { scale: 2.3, opacity: 0, duration: 1.6, ease: "power2.out" }, 68.3 + i * 0.22);
+          });
+          tl.fromTo("#ep-kick", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: EMPH }, 68.0);
+          tl.fromTo(".ep-w", { opacity: 0, y: 90, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: EMPH, stagger: 0.28 }, 68.15);
+          drawPath("#ep-line", 69.3, 0.9);
+          mode("full", 74.0, 0.9);
+
+          // ================= E2. tough situations (76 – 79) =================
+          layer("#E2", 75.9, 79.0);
+          tl.fromTo("#mtn-card", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.6, ease: EMPH }, 76.0);
+          drawPath("#mtn", 76.2, 1.2);
+          tl.fromTo("#flag", { opacity: 0, scale: 0, transformOrigin: "0% 100%" }, { opacity: 1, scale: 1, duration: 0.4, ease: SPRING }, 78.0);
+          // climber follows the ridge (pre-computed waypoints, no DOM measuring)
+          const ridge = [[10, 235], [120, 140], [175, 175], [300, 40]];
+          ridge.forEach((p, i) => {
+            if (i === 0) return;
+            tl.to("#climber", { x: p[0] - 10, y: p[1] - 235, duration: 0.45, ease: "power1.inOut" }, 76.4 + (i - 1) * 0.5);
+          });
+          tl.fromTo("#mtn-txt", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.6, ease: EMPH }, 76.6);
+
+          // ================= F. CODING IMPORTANCE (79.1 – 94.8) =================
+          mode("card", 79.0, 0.9);
+          chrome("#card-shadow", 79.8, 94.6);
+          layer("#F", 79.3, 94.7, 0.01);
+          tl.fromTo("#bars-card", { opacity: 0, y: 80 }, { opacity: 1, y: 0, duration: 0.8, ease: EMPH }, 79.3);
+          tl.fromTo("#bar1", { scaleX: 0 }, { scaleX: 0.2, duration: 1.4, ease: EMPH }, 83.5);
+          tl.fromTo("#bar2", { scaleX: 0 }, { scaleX: 0.3, duration: 1.4, ease: EMPH }, 89.0);
+          [["#num1", 20, 83.5], ["#num2", 30, 89.0]].forEach(([s, to, t]) => {
+            const o = { v: 0 };
+            const el = q(s);
+            tl.to(o, { v: to, duration: 1.4, ease: EMPH, onUpdate: () => { el.textContent = Math.round(o.v) + "%"; } }, t);
+            tl.fromTo(s, { scale: 1 }, { scale: 1.18, duration: 0.18, yoyo: true, repeat: 1, ease: "power2.out" }, t + 1.4);
+          });
+
+          // ================= G. colour-block wipe (94.7) =================
+          gsap.set(".blk", { yPercent: 100 });
+          tl.to(".blk", { yPercent: 0, duration: 0.42, ease: "power3.in", stagger: 0.06 }, 94.45);
+          tl.set("#F", { opacity: 0 }, 94.95);
+          tl.set("#card-shadow", { opacity: 0 }, 94.95);
+          tl.set("#video-wrap", MODES.pip, 94.95);
+          tl.to(".blk", { yPercent: -100, duration: 0.5, ease: "power3.out", stagger: 0.06 }, 95.05);
+
+          // ================= H. AI ERA (95 – 114.6) =================
+          chrome("#pip-ring", 95.1, 114.4);
+          tl.to("#pip-ring", { rotation: 1080, duration: 19.3, ease: "none" }, 95.1);
+          layer("#H", 95.0, 114.5, 0.01);
+          popIn("#ai-pill", 95.3);
+          [["#bub1", 97.0], ["#bub2", 98.6], ["#bub3", 100.2]].forEach(([s, t], i) => {
+            tl.fromTo(s, { opacity: 0, scale: 0.5, x: i === 2 ? 60 : -60 }, { opacity: 1, scale: 1, x: 0, duration: 0.6, ease: SPRING }, t);
+          });
+          tl.fromTo(".lk", { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: 0.12 }, 102.3);
+          tl.to(".lk", { strokeDashoffset: -64, duration: 2, ease: "none" }, 102.3);
+          popIn("#spark", 102.35);
+          tl.to("#spark-star", { rotation: 180, duration: 2, ease: "power2.inOut" }, 102.4);
+          tl.to("#langs", { opacity: 0, scale: 0.94, filter: "blur(8px)", duration: 0.45, ease: "power2.in" }, 104.2);
+          tl.fromTo("#eq-card", { opacity: 0, y: 70, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: EMPH }, 104.45);
+          tl.fromTo("#eq-grad", { backgroundPosition: "0% 50%" }, { backgroundPosition: "100% 50%", duration: 2.5, ease: "sine.inOut" }, 104.6);
+          tl.to("#eq-card", { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, 107.0);
+          tl.fromTo("#prompt", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.6, ease: EMPH }, 107.2);
+          typeText("#prompt-typed", "Build an app for my school", 107.4, 16);
+          blink("#caret2", 109.1, 114.3);
+          tl.fromTo("#send", { scale: 1 }, { scale: 0.8, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out" }, 109.2);
+          tl.fromTo("#typing", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: SPRING }, 110.6);
+          tl.to(".td", { y: -14, duration: 0.2, ease: "sine.inOut", yoyo: true, repeat: 3, stagger: 0.1 }, 110.8);
+          tl.to("#typing", { opacity: 0, duration: 0.2 }, 111.6);
+          tl.fromTo("#app", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: EMPH }, 111.65);
+          tl.fromTo("#app .tile", { opacity: 0, scale: 0.4, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: SPRING, stagger: 0.17 }, 111.8);
+          tl.fromTo("#built", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: EMPH }, 113.8);
+          mode("full", 114.45, 1.0);
+
+          // ================= I. WORTH IT → YES (117.7 – 121.3) =================
+          layer("#I", 117.6, 121.4);
+          tl.fromTo("#worth", { opacity: 0, y: 60, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: EMPH }, 117.72);
+          tl.to("#worth", { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 118.75);
+          tl.fromTo("#yes", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 119.0);
+          tl.fromTo("#yes-c", { scale: 0, transformOrigin: "50% 50%" }, { scale: 1, duration: 0.55, ease: SPRING }, 119.0);
+          drawPath("#yes-ck", 119.25, 0.45);
+          // confetti — seeded, deterministic
+          (function () {
+            let s = 7;
+            const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+            const cols = ["#4285f4", "#ea4335", "#fbbc05", "#34a853"];
+            const host = q("#confetti");
+            for (let i = 0; i < 44; i++) {
+              const d = document.createElement("div");
+              const w = 14 + rnd() * 16;
+              d.style.cssText = `position:absolute;left:540px;top:1210px;width:${w}px;height:${w * (rnd() > 0.5 ? 1 : 0.45)}px;border-radius:${rnd() > 0.5 ? 50 : 4}%;background:${cols[i % 4]};opacity:0`;
+              host.appendChild(d);
+              const ang = rnd() * Math.PI * 2, dist = 220 + rnd() * 340;
+              tl.fromTo(d, { opacity: 1, x: 0, y: 0, rotation: 0 }, { x: Math.cos(ang) * dist, y: Math.sin(ang) * dist * 0.8 - 120, rotation: rnd() * 540, duration: 1.1, ease: "power3.out" }, 119.1);
+              tl.to(d, { y: "+=260", opacity: 0, duration: 0.9, ease: "power1.in" }, 120.2);
+            }
+          })();
+
+          // ================= J. CODER vs NON-CODER (124 – 133) =================
+          layer("#J", 124.0, 132.9);
+          tl.fromTo("#cmp1", { opacity: 0, rotationY: -80, x: -60 }, { opacity: 1, rotationY: 0, x: 0, duration: 0.8, ease: EMPH }, 124.1);
+          tl.fromTo("#cmp2", { opacity: 0, rotationY: 80, x: 60 }, { opacity: 1, rotationY: 0, x: 0, duration: 0.8, ease: EMPH }, 128.6);
+          tl.to("#cmp1", { scale: 0.94, opacity: 0.55, duration: 0.5 }, 128.6);
+
+          // ================= K. SKILLS (134 – 147.5) =================
+          mode("card", 133.9, 0.9);
+          chrome("#card-shadow", 134.7, 147.4);
+          layer("#K", 134.1, 147.5, 0.01);
+          tl.fromTo("#sk-card", { opacity: 0, y: 80 }, { opacity: 1, y: 0, duration: 0.8, ease: EMPH }, 134.2);
+          tl.fromTo("#sk-center", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.6, ease: SPRING }, 134.5);
+          const SKT = [138.3, 140.0, 141.6, 143.6];
+          qa(".skl").forEach((el, i) => {
+            const L = 285;
+            tl.fromTo(el, { strokeDasharray: L, strokeDashoffset: L }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, SKT[i] - 0.15);
+          });
+          qa(".sk").forEach((el, i) => {
+            tl.fromTo(el, { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.6, ease: SPRING }, SKT[i]);
+            tl.to(el, { y: i < 2 ? -8 : 8, duration: 1.2, ease: "sine.inOut", yoyo: true, repeat: 2 }, SKT[i] + 0.6);
+          });
+
+          // ================= L. OUTRO (147.5 – 150.4) =================
+          tl.to("#L", { clipPath: "circle(1150px at 540px 960px)", duration: 0.7, ease: "power3.out" }, 147.5);
+          tl.fromTo(".od", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.45, ease: SPRING, stagger: 0.09 }, 147.75);
+          tl.to(".od", { y: -20, duration: 0.22, ease: "sine.out", yoyo: true, repeat: 1, stagger: 0.07 }, 148.3);
+          tl.fromTo("#out-big", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.7, ease: EMPH }, 148.0);
+          tl.fromTo("#out-sub", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: EMPH }, 148.35);
+          tl.fromTo("#out-cta", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.6, ease: SPRING }, 148.7);
+          tl.to("#out-cta", { scale: 1.05, duration: 0.4, ease: "sine.inOut", yoyo: true, repeat: 1 }, 149.4);
+
+          // ================= captions =================
+          const COLS = ["cb", "cr", "cy", "cg"];
+          const host = q("#caps");
+          window.CAPS.forEach((c, i) => {
+            const [t0, t1, words] = c;
+            const wrap = document.createElement("div");
+            wrap.className = "cap";
+            const inner = document.createElement("div");
+            inner.className = "cap-in";
+            words.forEach(([w, ci]) => {
+              const sp = document.createElement("span");
+              sp.textContent = w;
+              if (ci >= 0) sp.className = COLS[ci];
+              inner.appendChild(sp);
+            });
+            wrap.appendChild(inner);
+            host.appendChild(wrap);
+            tl.fromTo(wrap, { opacity: 0, y: 26, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.22, ease: "power3.out" }, t0);
+            tl.fromTo(inner.children, { y: 10 }, { y: 0, duration: 0.25, ease: "power2.out", stagger: 0.05 }, t0);
+            tl.to(wrap, { opacity: 0, duration: 0.1, ease: "none" }, Math.max(t0 + 0.2, t1 - 0.08));
+          });
+
+          window.__timelines["fsc"] = tl;
+        })();
+      </script>
+    </div>
+  </body>
+</html>

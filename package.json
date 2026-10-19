@@ -1,0 +1,8 @@
+{
+  "name": "sun-video-editor-setup",
+  "private": true,
+  "description": "Talking-head video -> cleaned, captioned, HyperFrames-animated short",
+  "dependencies": {
+    "hyperframes": "0.8.176"
+  }
+}

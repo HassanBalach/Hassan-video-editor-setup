@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Outfit";
+        src: url("fonts/Outfit.ttf") format("truetype");
+        font-weight: 100 900;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Noto Nastaliq Urdu";
+        src: url("fonts/NotoNastaliqUrdu.ttf") format("truetype");
+        font-weight: 400 700;
+        font-display: block;
+      }
+      :root {
+        --blue: #4285f4;
+        --red: #ea4335;
+        --yellow: #fbbc05;
+        --green: #34a853;
+        --ink: #1f1f1f;
+        --ink2: #5f6368;
+        --paper: #f8fafd;
+        --card: #ffffff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: "Outfit", "Noto Nastaliq Urdu", sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--paper);
+      }
+      .abs {
+        position: absolute;
+      }
+      .row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* ---------- soft canvas behind the video ---------- */
+      #bg {
+        position: absolute;
+        inset: 0;
+        background: var(--paper);
+        overflow: hidden;
+      }
+      .blob {
+        position: absolute;
+        width: 640px;
+        height: 640px;
+        border-radius: 50%;
+        filter: blur(90px);
+        opacity: 0.42;
+      }
+      .grid-dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(60, 64, 67, 0.13) 2px, transparent 2px);
+        background-size: 44px 44px;
+      }
+
+      /* ---------- video + its chrome ---------- */
+      #video-wrap {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        clip-path: inset(0px 0px 0px 0px round 0px);
+      }
+      #video-wrap video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      #card-shadow {
+        left: 70px;
+        top: 80px;
+        width: 940px;
+        height: 850px;
+        border-radius: 56px;
+        box-shadow:
+          0 30px 70px rgba(60, 64, 67, 0.28),
+          0 0 0 6px #fff;
+        opacity: 0;
+      }
+      #pip-ring {
+        left: 344px;
+        top: 144px;
+        width: 392px;
+        height: 392px;
+        border-radius: 50%;
+        background: conic-gradient(var(--blue), var(--red), var(--yellow), var(--green), var(--blue));
+        opacity: 0;
+      }
+      #pip-ring-inner {
+        position: absolute;
+        inset: 8px;
+        border-radius: 50%;
+        background: #fff;
+      }
+
+      /* ---------- common UI atoms ---------- */
+      .pill {
+        background: #fff;
+        border-radius: 999px;
+        box-shadow: 0 10px 30px rgba(60, 64, 67, 0.18);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 42px;
+        height: 104px;
+        font-weight: 700;
+        font-size: 46px;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      .card {
+        background: #fff;
+        border-radius: 44px;
+        box-shadow: 0 24px 60px rgba(60, 64, 67, 0.22);
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.86);
+        border-radius: 40px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      }
+      .dot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .b {
+        background: var(--blue);
+      }
+      .r {
+        background: var(--red);
+      }
+      .y {
+        background: var(--yellow);
+      }
+      .g {
+        background: var(--green);
+      }
+      .cb {
+        color: var(--blue);
+      }
+      .cr {
+        color: var(--red);
+      }
+      .cy {
+        color: #e3a600;
+      }
+      .cg {
+        color: var(--green);
+      }
+      .ch {
+        display: inline-block;
+      }
+      .layer {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+
+      /* ---------- captions ---------- */
+      #caps {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1580px;
+        height: 130px;
+      }
+      .cap {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        display: flex;
+        justify-content: center;
+        opacity: 0;
+      }
+      .cap-in {
+        background: #fff;
+        border-radius: 34px;
+        padding: 14px 34px 18px;
+        font-weight: 800;
+        font-size: 62px;
+        letter-spacing: -0.5px;
+        color: var(--ink);
+        box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+        white-space: nowrap;
+      }
+      .cap-in span {
+        display: inline-block;
+        margin: 0 8px;
+      }
+
+      /* ---------- search UI ---------- */
+      #search-bar {
+        left: 50px;
+        top: 980px;
+        width: 980px;
+        height: 120px;
+        border-radius: 60px;
+        background: #fff;
+        box-shadow: 0 12px 34px rgba(60, 64, 67, 0.22);
+        display: flex;
+        align-items: center;
+        padding: 0 40px;
+        gap: 26px;
+        font-size: 44px;
+        color: var(--ink);
+        font-weight: 500;
+      }
+      #search-text {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      #caret {
+        display: inline-block;
+        width: 4px;
+        height: 52px;
+        background: var(--blue);
+        vertical-align: middle;
+        margin-left: 4px;
+      }
+      #sugg {
+        left: 50px;
+        top: 1118px;
+        width: 980px;
+        height: 344px;
+        border-radius: 40px;
+        background: #fff;
+        box-shadow: 0 16px 40px rgba(60, 64, 67, 0.2);
+        overflow: hidden;
+        padding: 14px 0;
+      }
+      .sg {
+        position: relative;
+        height: 79px;
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        padding: 0 40px;
+        font-size: 40px;
+        color: var(--ink);
+        font-weight: 500;
+        opacity: 0;
+      }
+      .sg-hl {
+        position: absolute;
+        inset: 0;
+        background: #e8f0fe;
+        transform-origin: left center;
+      }
+      .sg > * {
+        position: relative;
+      }
+
+      /* ---------- hero overlays ---------- */
+      .hero {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .big {
+        font-weight: 800;
+        font-size: 150px;
+        line-height: 1;
+        letter-spacing: -3px;
+        text-align: center;
+      }
+      .kicker {
+        font-weight: 600;
+        font-size: 44px;
+        letter-spacing: 6px;
+        text-transform: uppercase;
+      }
+
+      /* chips */
+      .chip {
+        background: #fff;
+        border-radius: 999px;
+        height: 96px;
+        padding: 0 36px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 42px;
+        font-weight: 700;
+        color: var(--ink);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+        white-space: nowrap;
+      }
+
+      /* chat */
+      .bubble {
+        position: absolute;
+        height: 108px;
+        border-radius: 54px;
+        display: flex;
+        align-items: center;
+        padding: 0 44px;
+        font-size: 48px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        opacity: 0;
+      }
+      .urdu {
+        font-family: "Noto Nastaliq Urdu", "Outfit", sans-serif;
+        font-size: 40px;
+        line-height: 1.1;
+      }
+      .tile {
+        position: absolute;
+        border-radius: 22px;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="fsc" data-start="0" data-duration="DURATION" data-fps="30" data-width="1080" data-height="1920">
+      <!-- soft canvas -->
+      <div id="bg">
+        <div class="grid-dots"></div>
+        <div class="blob b" id="blob1" style="left: -180px; top: 120px"></div>
+        <div class="blob r" id="blob2" style="left: 620px; top: 420px"></div>
+        <div class="blob y" id="blob3" style="left: -120px; top: 1180px"></div>
+        <div class="blob g" id="blob4" style="left: 600px; top: 1360px"></div>
+      </div>
+
+      <!-- chrome that sits behind the cropped video -->
+      <div class="abs" id="card-shadow"></div>
+      <div class="abs" id="pip-ring"><div id="pip-ring-inner"></div></div>
+
+      <!-- the footage -->
+      <div id="video-wrap">
+        <video id="bg-video" class="clip" src="input-video.mp4" playsinline data-has-audio="true" data-start="0" data-duration="DURATION" data-track-index="1"></video>
+      </div>
+
+      <!-- ===== scenes go here: one .layer div per scene (see examples/fsc-after-what-next) ===== -->
+      <div class="layer" id="A">
+        <div class="row" style="top: 170px; height: 120px">
+          <div class="pill" id="title-pill"><span class="dot b"></span><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;Your hook title</div>
+        </div>
+      </div>
+
+      <!-- captions -->
+      <div id="caps"></div>
+
+      <script src="vendor/gsap.min.js"></script>
+      <script src="captions.js"></script>
+      <script>
+        (function () {
+          const tl = gsap.timeline({ paused: true });
+          const q = (s) => document.querySelector(s);
+          const qa = (s) => Array.from(document.querySelectorAll(s));
+          // Material-like motion
+          const EMPH = "expo.out";
+          const STD = "power3.inOut";
+          const SPRING = "back.out(1.7)";
+
+          // ---------------- video framing modes ----------------
+          const MODES = {
+            full: { clipPath: "inset(0px 0px 0px 0px round 0px)", y: 0, scale: 1 },
+            card: { clipPath: "inset(250px 70px 820px 70px round 56px)", y: -170, scale: 1 },
+            pip: { clipPath: "inset(330px 250px 1010px 250px round 290px)", y: -280, scale: 0.62 },
+          };
+          gsap.set("#video-wrap", { transformOrigin: "540px 620px" });
+          function mode(name, t, d) {
+            tl.to("#video-wrap", Object.assign({ duration: d || 0.9, ease: STD }, MODES[name]), t);
+          }
+          function chrome(sel, t0, t1) {
+            tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, t0);
+            tl.to(sel, { opacity: 0, duration: 0.25, ease: "power2.in" }, t1);
+          }
+          function layer(sel, t0, t1, fade) {
+            tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: fade || 0.01 }, t0);
+            tl.to(sel, { opacity: 0, duration: fade || 0.3, ease: "power2.in" }, t1);
+          }
+          function popIn(sel, t, opts) {
+            tl.fromTo(sel, { opacity: 0, scale: 0.6, y: 30 }, Object.assign({ opacity: 1, scale: 1, y: 0, duration: 0.6, ease: SPRING }, opts || {}), t);
+          }
+          function drawPath(sel, t, d) {
+            const el = q(sel);
+            const L = el.getTotalLength();
+            tl.fromTo(sel, { strokeDasharray: L, strokeDashoffset: L }, { strokeDashoffset: 0, duration: d, ease: "power2.inOut" }, t);
+          }
+          function typeText(sel, text, t, cps) {
+            const el = q(sel);
+            const o = { n: 0 };
+            tl.to(o, { n: text.length, duration: text.length / cps, ease: "none", onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)); } }, t);
+          }
+          function blink(sel, t0, t1) {
+            const n = Math.max(1, Math.floor((t1 - t0) / 0.5));
+            tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.25, ease: "steps(1)", repeat: n * 2 - 1, yoyo: true }, t0);
+          }
+
+          // ---------------- ambient background ----------------
+          [["#blob1", 120, 80], ["#blob2", -100, 120], ["#blob3", 140, -90], ["#blob4", -120, -110]].forEach(([s, dx, dy], i) => {
+            tl.to(s, { x: dx, y: dy, duration: 9 + i * 1.3, ease: "sine.inOut", repeat: 7, yoyo: true }, 0);
+          });
+
+          // ================= scenes =================
+          // Times are seconds on the EDITED timeline (scripts/captions.py prints every chunk's start/end).
+          // Building blocks: mode("full"|"card"|"pip", t), chrome("#card-shadow"|"#pip-ring", t0, t1),
+          // layer(sel, t0, t1), popIn(sel, t), drawPath(sel, t, d), typeText(sel, text, t, cps), blink(sel, t0, t1)
+          layer("#A", 0, 6);
+          popIn("#title-pill", 0.2);
+          // example: shrink the video into a card at 10s and back at 20s
+          // mode("card", 10); chrome("#card-shadow", 10.8, 19.8); mode("full", 20);
+
+          // ================= captions =================
+          const COLS = ["cb", "cr", "cy", "cg"];
+          const host = q("#caps");
+          window.CAPS.forEach((c, i) => {
+            const [t0, t1, words] = c;
+            const wrap = document.createElement("div");
+            wrap.className = "cap";
+            const inner = document.createElement("div");
+            inner.className = "cap-in";
+            words.forEach(([w, ci]) => {
+              const sp = document.createElement("span");
+              sp.textContent = w;
+              if (ci >= 0) sp.className = COLS[ci];
+              inner.appendChild(sp);
+            });
+            wrap.appendChild(inner);
+            host.appendChild(wrap);
+            tl.fromTo(wrap, { opacity: 0, y: 26, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.22, ease: "power3.out" }, t0);
+            tl.fromTo(inner.children, { y: 10 }, { y: 0, duration: 0.25, ease: "power2.out", stagger: 0.05 }, t0);
+            tl.to(wrap, { opacity: 0, duration: 0.1, ease: "none" }, Math.max(t0 + 0.2, t1 - 0.08));
+          });
+
+          window.__timelines["fsc"] = tl;
+        })();
+      </script>
+    </div>
+  </body>
+</html>
