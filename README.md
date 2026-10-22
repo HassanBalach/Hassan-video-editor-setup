@@ -6,12 +6,18 @@ silences and false starts cut, voice denoised, captions, Google-style motion gra
 
 First video made with it: `examples/fsc-after-what-next` ("After FSC, what next?").
 
+**Claude skill:** `.claude/skills/google-style-video-edit/` holds the full editing style (workflow, style guide,
+scene patterns). Any Claude Code session opened on this repo picks it up — just send the raw video and say
+"edit this in my style".
+
+**New video:** `scripts/new.sh raw.mp4 my-video` creates `work/my-video/` + `projects/my-video/` and transcribes.
+
 ## Pipeline
 
 | step | command | what it does |
 | ---- | ------- | ------------ |
 | 0 | `./setup.sh` | installs sherpa-onnx + offline Whisper medium, RNNoise model, HyperFrames CLI + headless Chrome |
-| 1 | `python3 scripts/transcribe.py raw.mp4 work/myvid` | splits at silences, transcribes each chunk → `work/myvid/chunks.json` (id, start, end, loudness, text) |
+| 1 | `scripts/new.sh raw.mp4 myvid` (runs `transcribe.py`) | splits at silences, transcribes each chunk → `work/myvid/chunks.json` (id, start, end, loudness, text) |
 | 2 | `python3 scripts/cut.py raw.mp4 work/myvid --drop 0,1,15` | drops the chunk ids you list (noise, mumbles, false starts, repeated takes), denoises, cuts every pause, upscales to 1080×1920 → `edited_HD.mp4` |
 | 3 | `scripts/stage.sh work/myvid projects/myvid` | new project from `template/`, footage staged with dense keyframes |
 | 4 | write `projects/myvid/captions.json` (+ optional `hide.json`), then `python3 scripts/captions.py work/myvid projects/myvid` | timed caption groups → `public/captions.js`; also prints every chunk's time on the edited timeline |

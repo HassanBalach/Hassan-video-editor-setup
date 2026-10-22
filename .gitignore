@@ -7,3 +7,4 @@ projects/*/public/input-video.mp4
 *.wav
 .hyperframes/
 __pycache__/
+projects/test-clip/

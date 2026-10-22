@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 W="$1"; P="$2"
 mkdir -p "$P/public"
-cp -rn "$ROOT/template/public/." "$P/public/"
+cp -r --update=none "$ROOT/template/public/." "$P/public/"
 # dense keyframes so the renderer can seek every frame
 ffmpeg -v error -y -i "$W/edited_HD.mp4" -c:v libx264 -preset fast -crf 18 -g 30 -keyint_min 30 \
   -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 192k "$P/public/input-video.mp4"

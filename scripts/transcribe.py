@@ -38,7 +38,7 @@ out = []
 for i, (s, e) in enumerate(chunks):
     st = rec.create_stream(); st.accept_waveform(sr, a[int(s * sr):int(e * sr)]); rec.decode_stream(st)
     x = a[int(s * sr):int(e * sr)]
-    db = round(20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9), 1)
+    db = round(float(20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)), 1)
     out.append({"i": i, "start": round(s, 2), "end": round(e, 2), "db": db, "text": st.result.text.strip()})
     print(f"{i:3d} [{s:7.2f}-{e:7.2f}] {db:6.1f}dB  {out[-1]['text']}", flush=True)
 json.dump(out, open(os.path.join(work, "chunks.json"), "w"), ensure_ascii=False, indent=1)
