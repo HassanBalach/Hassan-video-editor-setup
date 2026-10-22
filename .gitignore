@@ -1,5 +1,5 @@
-node_modules/
-models/
+node_modules
+models
 work/
 projects/*/public/input-video.mp4
 **/render_hf.mp4
