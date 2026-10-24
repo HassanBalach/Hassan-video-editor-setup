@@ -58,6 +58,18 @@ otherwise). He is a creator, not a video engineer: explain choices in one line e
 - Keep the face visible except during hero cards. Overlays live in safe zones (see style guide).
 - End with the outro card: four dots → the main mantra → one-line takeaway → "Follow for more".
 
+## Lessons from past edits
+
+- **Short reels (< 60 s):** one section per sentence or two, one hero only, outro may overlap the last spoken
+  line (its text should repeat that line, e.g. "Let me know in the comments").
+- An SVG path with a round linecap shows a dot before `drawPath` starts — keep it `opacity: 0` until the draw.
+- The template already animates the background blobs; don't add a second blob tween in the scenes block.
+- Ambiguous phrase (e.g. "if not then, when?"): caption what ASR consistently hears across modes and
+  tell Hassan, so he can correct it.
+- When waiting on a render, don't `pgrep -f render.sh` / `pkill -f` from a shell whose own command line
+  contains that pattern — it matches itself. Check for the output file or use the background task notification.
+- Render speed on 4 CPUs: ~13 s of wall time per second of video.
+
 ## Hard rules
 
 - HyperFrames contract: one paused GSAP timeline at `window.__timelines["<composition-id>"]`; no
