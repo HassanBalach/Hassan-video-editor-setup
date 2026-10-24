@@ -8,3 +8,5 @@ projects/*/public/input-video.mp4
 .hyperframes/
 __pycache__/
 projects/test-clip/
+projects/*/public/fonts/
+projects/*/public/vendor/
